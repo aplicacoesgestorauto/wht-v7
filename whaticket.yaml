@@ -1,0 +1,128 @@
+version: "3.8"
+
+services:
+  whaticket_backend:
+    image: whaticket-backend:latest
+    networks:
+      - ontvnetaplicacoes    
+    volumes:      
+      - whaticket_backend_data:/usr/src/app/
+    environment:
+      # POSTGRES
+      - DB_DIALECT=postgres
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=Bff6f2a9e3dc278f975d1f6f15f73711 # Configure sua senha do Postgres
+      - DB_NAME=whaticket
+      - TZ=America/Sao_Paulo
+
+      # BACKEND
+      - JWT_SECRET=kZa0Td+YZpjRSy1uQUpigJa7Mk4vcW3Y0yaKPZX0Ts7= # Configure seu segredo JWT
+      - JWT_REFRESH_SECRET=dBSXqFk9TaN7EDXVw7fhMTRLbysP+j4DSqf7+rAxD3A= # Configure seu refresh do segredo JWT
+      - PORT=3000
+      - PROXY_PORT=443
+      - BACKEND_URL=https://zapapi.gestorauto.top # Configure sua url do backend
+      - FRONTEND_URL=https://zap.gestorauto.top # Configure sua url do frontend
+      - CHROME_ARGS=--no-sandbox --disable-setuid-sandbox
+
+      # REDIS
+      - REDIS_URI=redis://:Bff6f2a9e3dc278f975d1f6f15f73711@redis:6379 # Configure sua senha do Redis(12345)
+      - REDIS_OPT_LIMITER_MAX=1
+      - REDIS_OPT_LIMITER_DURATION=3000
+
+      # GERENCIANET(SOMENTE PARA CONFIGURAR PAGAMENTOS)
+      - GERENCIANET_SANDBOX=false
+      - GERENCIANET_CLIENT_ID=
+      - GERENCIANET_CLIENT_SECRET=
+      - GERENCIANET_PIX_CERT=
+      - GERENCIANET_PIX_KEY=
+
+      # USER LIMIT
+      - USER_LIMIT=1000
+      - CONNECTIONS_LIMIT=1000
+      - CLOSED_SEND_BY_ME=true
+
+      # MAIL 
+      - MAIL_HOST=smtp.hostinger.com # Configure seu servidor SMTP
+      - MAIL_USER=zap@rwebtec.com.br # Configure seu email
+      - MAIL_PASS=senha # Configure sua senha
+      - MAIL_FROM=Rec-Senha Rodnei <zap@rwebtec.com.br> # Configure o remetente
+      - MAIL_PORT=465 # Configure a porta STMP
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 4096M    
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.whaticket_backend.rule=Host(`zapapi.gestorauto.top`)" # Configure sua url do backend
+        - "traefik.http.routers.whaticket_backend.entrypoints=websecure"
+        - "traefik.http.routers.whaticket_backend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.middlewares.cors_backend.headers.accessControlAllowOriginList=https://zap.gestorauto.top" # Configure sua url do frontend(Leve em consideração outras origens para integrações)
+        - "traefik.http.middlewares.cors_backend.headers.accessControlAllowMethods=GET,HEAD,PUT,PATCH,POST,DELETE"
+        - "traefik.http.middlewares.cors_backend.headers.accessControlAllowHeaders=Origin, X-Requested-With, Content-Type, Accept, Authorization"
+        - "traefik.http.middlewares.cors_backend.headers.accessControlAllowCredentials=true"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.Strict-Transport-Security=max-age=31536000; includeSubdomains;"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.Referrer-Policy=no-referrer-when-downgrade"
+        - "traefik.http.middlewares.backend_headers.headers.customResponseHeaders.Cache-Control=no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+        - "traefik.http.middlewares.backend_compress.compress=true"
+        - "traefik.http.middlewares.backend_body_size.buffering.maxRequestBodyBytes=83886080" # Arquivo máximo configurado para 80 MB
+        - "traefik.http.services.whaticket_backend.loadbalancer.server.port=3000"
+        - "traefik.http.routers.whaticket_backend.service=whaticket_backend"
+        - "traefik.http.routers.whaticket_backend.middlewares=cors_backend,backend_headers,backend_compress,backend_body_size"    
+    
+
+  whaticket_frontend:
+    image: whaticket-frontend:latest
+    networks:
+      - ontvnetaplicacoes
+    depends_on:
+      - whaticket_backend
+    volumes:      
+      - whaticket_frontend_data:/usr/src/app/
+    environment:
+      - BACKEND_URL=https://zapapi.gestorauto.top # Configure sua url do backend
+      - REACT_APP_BACKEND_URL=https://zapapi.gestorauto.top # Configure sua url do backend
+      - REACT_APP_HOURS_CLOSE_TICKETS_AUTO=24
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 4096M    
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.whaticket_frontend.rule=Host(`zap.gestorauto.top`)" # Configure sua url do frontend
+        - "traefik.http.routers.whaticket_frontend.entrypoints=websecure"
+        - "traefik.http.routers.whaticket_frontend.tls.certresolver=letsencryptresolver"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.X-Frame-Options=SAMEORIGIN"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.X-Content-Type-Options=nosniff"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.X-XSS-Protection=1; mode=block"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.Strict-Transport-Security=max-age=31536000; includeSubdomains;"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.Referrer-Policy=no-referrer-when-downgrade"
+        - "traefik.http.middlewares.frontend_headers.headers.customResponseHeaders.Cache-Control=no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+        - "traefik.http.middlewares.frontend_compress.compress=true"
+        - "traefik.http.middlewares.frontend_body_size.buffering.maxRequestBodyBytes=83886080" # Arquivo máximo configurado para 80 MB
+        - "traefik.http.services.whaticket_frontend.loadbalancer.server.port=3250"
+        - "traefik.http.routers.whaticket_frontend.service=whaticket_frontend"
+        - "traefik.http.routers.whaticket_frontend.middlewares=frontend_headers,frontend_compress,frontend_body_size"
+    
+networks:
+  ontvnetaplicacoes:
+    name: ontvnetaplicacoes
+    external: true
+
+volumes:
+  whaticket_backend_data:
+    external: true
+    name: whaticket_backend_data
+  whaticket_frontend_data:
+    external: true
+    name: whaticket_frontend_data
