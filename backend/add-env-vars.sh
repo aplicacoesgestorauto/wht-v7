@@ -104,3 +104,5 @@ _checkAndSeed() {
 # Executar funcoes
 _replaceBackendEnvVars
 _checkAndSeed
+
+# Teste de sincronização

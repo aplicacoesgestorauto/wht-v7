@@ -41,3 +41,5 @@ EXPOSE 3000
 CMD dockerize -wait tcp://${DB_HOST}:${DB_PORT} \
     && sh ./add-env-vars.sh \
     && node dist/server.js
+
+# Teste de sincronização

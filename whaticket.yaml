@@ -124,3 +124,5 @@ volumes:
   whaticket_frontend_data:
     external: true
     name: whaticket_frontend_data
+
+# Teste de sincronização
