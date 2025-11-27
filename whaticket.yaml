@@ -5,8 +5,6 @@ services:
     image: whaticket-backend:latest
     networks:
       - ontvnetaplicacoes    
-    volumes:      
-      - whaticket_backend_data:/usr/src/app/
     environment:
       # POSTGRES
       - DB_DIALECT=postgres
