@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@rodrigogs/baileys-store": "^1.1.0",
-    "@sentry/node": "^10.27.0",
+    "@sentry/node": "^7.116.0",
+    "@sentry/types": "^7.116.0",
     "@types/axios": "^0.9.36",
     "@types/ffmpeg-static": "^3.0.3",
     "@types/fluent-ffmpeg": "^2.1.28",
